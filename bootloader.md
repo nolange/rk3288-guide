@@ -1,3 +1,11 @@
+Overview
+========
+
+This guide is a work in progress to document the steps necessary to get
+a recent debian, kernel and u-boot working on the Firefly-Rk3288. It
+encompasses some notes made over a year, and I will try to expand the
+points given some time
+
 Rockchip propietry loader
 -------------------------
 
@@ -40,6 +48,52 @@ Overall Targets
     automatically be recompiled. This means using DKMS and some hooks to
     generate a RAMdisk and update the bootscripts
 
+-   \[ \] EFI Boot?
+
+Some thing that will **not work** afterwards:
+
+-   The Android image has some expectations about the layout and
+    the bootloader. The available images wont work anymore, as soon as
+    you remove either of those.
+
+    **This guide assumes you don\`t want to run Android**
+
+-   Features from Rockchips propietary loader - no recovery (loader)
+    mode. Probably no fastboot.
+
+    Several Tools wont work afterwards
+
+Tools and details
+-----------------
+
+The information on the Rk3288 is spread over the web.
+
+### Recovery Mode
+
+The Friefly has a switch to boot into a special Recovery mode, this is a
+feature of the Rockchip bootloader.
+
+### Maskrom Mode
+
+Maskrom mode can be entered by connecting two points before powering on.
+This should allow repairing the eMMC if the device cant boot anymore.
+Unfortunatly *rkflashtool* \* is unable to read/write flash in this mode
+and rockchips own *update-tool* did not work at all.
+
+What I havent seen documented, but seems to be a feature: **Maskrom mode
+will boot from SD-Card first**
+
+\* Quite possibly I just picked one of the many out-dated forks
+
+**Recommendations:**
+
+-   Prepare an emergency SD-Card with U-Boot and Linux first. When the
+    eMMC Bootloader is bricked, you can enter Maskrom and boot from this
+    SD-Card, then delete the first MB from the eMMC
+
+-   Zero out the eMMC to kill the Loader and always boot from SD, until
+    you are confident enough to write to the eMMC
+
 SD-Card: Mainline u-boot and mainline Linux
 -------------------------------------------
 
@@ -78,8 +132,8 @@ the block from 2-4MB (should therefore allow blocksizes up to 2MB)
 
   -------- -------------------------
   32K      u-boot spl
-  64K      u-boot env \*
-  96K      u-boot
+  96K      u-boot env \*
+  128K     u-boot
   16M      boot (bootable flag)
   128MB+   filesystem partition(s)
   -------- -------------------------
@@ -97,6 +151,11 @@ parted --script /dev/sdf \
     set 1 hidden on \
     mkpart boot fat32 16Mib 128Mib \
     set 2 boot on \
+    mkpart rootfs ext2 128Mib 4Gib \
+ 
+
+mkfs.fat  /dev/sdf2
+mkfs.ext2 /dev/sdg3
 
 parted --script /dev/sdf \
     unit s \
@@ -142,12 +201,3 @@ $BUILDDIR/tools/mkimage -n rk3288 -T rksd -d $BUILDDIR/spl/u-boot-spl.bin $BUILD
 dd if=$BUILDDIR/u-boot-spl.rksd of=/dev/sdf seek=64
 dd if=$BUILDDIR/u-boot-dtb.img of=/dev/sdf seek=256
 ```
-
-### Checking for valid u-boot????
-
-The current scheme from the u-boot spl has a list of devices for reading
-the full u-boot. There are\`nt any checks whether the devices actually
-contain an u-boot, means it might just load random garbage. some header
-detection magic or checksums would be neat
-
-https://git.busybox.net/buildroot/tree/board/firefly/firefly-rk3288
