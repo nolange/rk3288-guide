@@ -58,8 +58,8 @@ Some thing that will **not work** afterwards:
 
     **This guide assumes you don\`t want to run Android**
 
--   Features from Rockchips propietary loader - no recovery (loader)
-    mode. Probably no fastboot.
+-   Features from Rockchips propietary loader - no recovery
+    (loader) mode. Probably no fastboot.
 
     Several Tools wont work afterwards
 
